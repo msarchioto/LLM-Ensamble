@@ -1,8 +1,8 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, T5ForConditionalGeneration 
 
-# Load the three open-source LLM models
+# Load the three open-source LLM models with small parameter size
 model_1_name = "google/codegemma-2b"
-model_2_name = "mistralai/Mistral-7B-Instruct-v0.3"
+model_2_name = "google/flan-t5-small"
 model_3_name = "meta-llama/Llama-3.2-1B-Instruct"
 
 # Load the fourth model, which will summarize the answers
@@ -13,7 +13,7 @@ tokenizer_1 = AutoTokenizer.from_pretrained(model_1_name)
 model_1 = AutoModelForCausalLM.from_pretrained(model_1_name)
 
 tokenizer_2 = AutoTokenizer.from_pretrained(model_2_name)
-model_2 = AutoModelForCausalLM.from_pretrained(model_2_name)
+model_2 = T5ForConditionalGeneration.from_pretrained(model_2_name)
 
 tokenizer_3 = AutoTokenizer.from_pretrained(model_3_name)
 model_3 = AutoModelForCausalLM.from_pretrained(model_3_name)
@@ -22,9 +22,14 @@ summary_tokenizer = AutoTokenizer.from_pretrained(summary_model_name)
 summary_model = AutoModelForCausalLM.from_pretrained(summary_model_name)
 
 # Helper function to generate answer from each model
-def generate_answer(model, tokenizer, question, max_length=100):
+def generate_answer(model, tokenizer, question, max_length=1000):
     inputs = tokenizer.encode(question, return_tensors="pt")
-    outputs = model.generate(inputs, max_length=max_length, num_return_sequences=1, pad_token_id=tokenizer.eos_token_id)
+    outputs = model.generate(
+        inputs, 
+        max_length=max_length,
+        num_return_sequences=1,
+        pad_token_id=tokenizer.eos_token_id,
+    )
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # 1. Receive an input question from the user
@@ -60,7 +65,7 @@ summary_input = f"{system_prompt}\n\n{fused_answer}"
 
 # Using the summarization model to generate a final output
 summary_inputs = summary_tokenizer.encode(summary_input, return_tensors="pt")
-summary_outputs = summary_model.generate(summary_inputs, max_length=150, num_return_sequences=1, pad_token_id=summary_tokenizer.eos_token_id)
+summary_outputs = summary_model.generate(summary_inputs, max_length=3000, num_return_sequences=1, pad_token_id=summary_tokenizer.eos_token_id)
 summary = summary_tokenizer.decode(summary_outputs[0], skip_special_tokens=True)
 
 # 5. Print the final summarized response from the fourth model
